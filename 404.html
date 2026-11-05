@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Сторінку не знайдено — Культуримо</title>
+  <meta name="description" content="Такої сторінки на сайті «Культуримо» немає.">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#FAF9F6">
+
+  <!-- Open Graph: як сторінка виглядає в месенджерах. og:image додати, коли з'явиться обкладинка (1200×630). -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Культуримо">
+  <meta property="og:locale" content="uk_UA">
+  <meta property="og:title" content="Сторінку не знайдено — Культуримо">
+  <meta property="og:description" content="Такої сторінки на сайті «Культуримо» немає.">
+
+  <link rel="icon" href="/assets/logo.svg" type="image/svg+xml">
+
+  <!-- Шрифти: Unbounded (заголовки), Inter (текст), Source Serif 4 (текст статей) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Unbounded:wght@500;600;700&display=swap">
+
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- not-found.js сам підключає main.js (шапка й футер). Шляхи від кореня: 404 відкривається за будь-якою адресою -->
+  <script type="module" src="/js/not-found.js"></script>
+</head>
+<body data-page="404">
+  <a class="skip-link" href="#main">Перейти до змісту</a>
+
+  <!-- Шапка рендериться з js/main.js -->
+  <header class="site-header" data-site-header></header>
+
+  <main id="main" tabindex="-1">
+    <section class="container not-found">
+      <p class="not-found__code" aria-hidden="true">404</p>
+      <h1 class="h-page">Цієї сторінки немає</h1>
+      <p class="lead">Можливо, посилання застаріло або в адресі закралася помилка. Культура, як завжди, ближче, ніж здається: почни з головної або пошукай потрібне.</p>
+      <form class="search-form" role="search" action="/search.html" method="get" data-404-search>
+        <label class="visually-hidden" for="nf-q">Пошуковий запит</label>
+        <input class="search-form__input" id="nf-q" type="search" name="q" autocomplete="off" enterkeyhint="search" placeholder="Що шукаємо?">
+        <button class="btn" type="submit">Знайти</button>
+      </form>
+      <p><a class="btn btn--quiet" href="/" data-404-home>На головну</a></p>
+      <div class="not-found__rubrics">
+        <h2 class="not-found__sub">Або зазирни в рубрику</h2>
+        <div data-404-rubrics></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Футер рендериться з js/main.js -->
+  <footer class="site-footer" data-site-footer></footer>
+</body>
+</html>

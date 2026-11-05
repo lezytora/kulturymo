@@ -1,0 +1,8 @@
+<!-- Логотип «Культуримо» (тимчасовий знак). Щоб замінити лого — поклади новий файл з тією ж назвою assets/logo.svg.
+     Синій квадрат = акцентний колір бренду (#1A5091), біла літера «К». -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Культуримо">
+  <rect width="32" height="32" fill="#1A5091"/>
+  <rect x="8" y="7" width="4.5" height="18" fill="#FFFFFF"/>
+  <polygon points="12.5,14.2 19.6,7 25.2,7 15.6,16.6" fill="#FFFFFF"/>
+  <polygon points="15.2,15.4 25.6,25 19.8,25 12.5,18.3" fill="#FFFFFF"/>
+</svg>
