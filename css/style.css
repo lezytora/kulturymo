@@ -1971,7 +1971,7 @@ main:focus {
    ===================================================================== */
 
 .article__col {
-  max-width: 44rem;
+  max-width: 1024px;
   margin-inline: auto;
 }
 
