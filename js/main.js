@@ -34,10 +34,11 @@ let activeRubric = page === "rubric" ? params.get("id") : null;
 
 // ---------- Розмітка ----------
 
+// Лого: assets/logo.svg на світлому фоні, assets/logo-light.svg — на темному (футер)
 function brandHtml(extraClass = "") {
   return `
     <a class="brand ${extraClass}" href="${links.home()}" aria-label="${escapeHtml(site.name)}, на головну">
-      <img class="brand__logo" src="${links.asset("assets/logo.svg")}" alt="" width="32" height="32">
+      <img class="brand__logo" src="${links.asset(extraClass.includes("inverse") ? "assets/logo-light.svg" : "assets/logo.svg")}" alt="" width="32" height="32">
       <span class="brand__name">${escapeHtml(site.name)}</span>
     </a>`;
 }
