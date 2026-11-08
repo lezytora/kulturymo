@@ -23,13 +23,16 @@ const state = {
 };
 
 const all = rubric ? articles.filter((a) => a.rubric === rubric.id).sort(byNewest) : [];
+// Підтеми, в яких уже є матеріали. Порожні у фільтрі не показуються —
+// з’являться самі, щойно в data.js додасться матеріал із такою підтемою.
+const activeSubtopics = rubric ? rubric.subtopics.filter((s) => all.some((a) => a.subtopic === s)) : [];
 const filtered = () => (state.subtopic ? all.filter((a) => a.subtopic === state.subtopic) : all);
 const countLabel = (n) => `${n} ${plural(n, ["матеріал", "матеріали", "матеріалів"])}`;
 
 // ---------- Розмітка ----------
 
 function filtersHtml() {
-  const buttons = [{ value: "", label: "Усі" }, ...rubric.subtopics.map((s) => ({ value: s, label: s }))];
+  const buttons = [{ value: "", label: "Усі" }, ...activeSubtopics.map((s) => ({ value: s, label: s }))];
   return `
     <div class="filters" role="group" aria-label="Підтеми рубрики">
       ${buttons
@@ -116,7 +119,7 @@ function pageHtml() {
           <p class="page-head__count">${countLabel(all.length)}</p>
         </div>
       </header>
-      ${all.length ? filtersHtml() : ""}
+      ${activeSubtopics.length ? filtersHtml() : ""}
       <p class="visually-hidden" aria-live="polite" data-status></p>
       <div class="rubric-results" data-results>${resultsHtml()}</div>
     </div>
@@ -144,7 +147,7 @@ function updateResults({ focusFrom = -1 } = {}) {
 }
 
 function setSubtopic(value) {
-  state.subtopic = rubric.subtopics.includes(value) ? value : "";
+  state.subtopic = activeSubtopics.includes(value) ? value : "";
   state.shown = PAGE_SIZE;
   // Фільтр зберігається в адресі, щоб посиланням можна було поділитися
   const url = new URL(location.href);
@@ -177,7 +180,7 @@ if (!rubric) {
   setActiveRubric(rubric.id);
   setPageMeta({ title: rubric.name, description: rubric.description });
   const tema = params.get("tema");
-  if (tema && rubric.subtopics.includes(tema)) state.subtopic = tema;
+  if (tema && activeSubtopics.includes(tema)) state.subtopic = tema;
   main.innerHTML = pageHtml();
   bind();
   reveal(main);
