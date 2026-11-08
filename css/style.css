@@ -218,7 +218,7 @@ h1, h2, h3, h4,
   font-weight: 600;
   letter-spacing: var(--tracking-display);
   line-height: var(--lh-tight);
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere; /* довге слово широким шрифтом переноситься, а не вилазить за край */
   hyphens: auto;
   text-wrap: balance;
 }
@@ -3033,6 +3033,75 @@ mark {
 .not-found__sub {
   margin-bottom: var(--space-4);
   font-size: var(--fs-lg);
+}
+
+/* =====================================================================
+   ВІДЕО З ФАЙЛУ, ПІДПИСИ ГАЛЕРЕЇ, ПОСИЛАННЯ В ТЕКСТІ, ЖАНРИ ПОДІЙ
+   ===================================================================== */
+
+/* Пропорції відео: вертикальне (телефон) і квадратне */
+.media--9x16 { --ratio: 9 / 16; }
+
+/* Плеєр власного відео (assets/video/*.mp4) — та сама рамка, що й YouTube */
+.media--player {
+  background: var(--color-inverse-bg);
+}
+
+.media--player > video {
+  object-fit: contain;
+  transition: none;
+}
+
+/* Фокус на кнопках плеєра (вони всередині <video>) — рамка навколо всього плеєра */
+.media--player:has(video:focus-visible) {
+  overflow: visible;
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* Вертикальне й квадратне відео не розтягуються на всю ширину — інакше не влізуть в екран */
+.video-embed--9x16 .media {
+  width: min(100%, 26rem, calc((100svh - var(--header-h) - var(--space-7)) * 9 / 16));
+  margin-inline: auto;
+}
+
+.video-embed--1x1 .media {
+  width: min(100%, 36rem);
+  margin-inline: auto;
+}
+
+/* Головне відео матеріалу стоїть на місці обкладинки */
+.article__cover.video-embed {
+  margin-top: var(--space-6);
+}
+
+/* Підпис під фото в галереї («Джерело: …») */
+.gallery__caption {
+  margin-top: var(--space-2);
+  font-family: var(--font-text);
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+.gallery__grid > li {
+  min-width: 0;
+}
+
+/* Посилання окремим рядком у тексті матеріалу */
+.prose__link .link::after {
+  content: " ↗";
+}
+
+/* Жанр події: нейтральна плашка (Балет, Опера, Комедія…) */
+.genre-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.tag--genre {
+  background: var(--color-ink);
 }
 
 /* =====================================================================

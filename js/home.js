@@ -107,7 +107,7 @@ function teamHtml() {
      <div class="team-teaser" data-reveal>
       <div class="team-teaser__text">
         <h2 class="h-section" id="team-title">Наша команда</h2>
-        <p class="lead">${escapeHtml(site.name)} роблять студенти, які пишуть, знімають і монтують між парами. Ми ходимо на події, про які розповідаємо, і перевіряємо маршрути власними ногами.</p>
+        <p class="lead">${escapeHtml(site.about?.statement || site.description)}</p>
         <a class="btn" href="${links.about("team")}">Познайомитися з командою</a>
       </div>
       <ul class="team-teaser__faces" role="list">
@@ -116,7 +116,7 @@ function teamHtml() {
             (p) => `
           <li>
             <a class="face" href="${links.author(p.id)}">
-              ${avatarHtml(p, 112)}
+              ${avatarHtml(p, 112, { decorative: true })}
               <span class="face__name">${escapeHtml(p.name)}</span>
             </a>
           </li>`

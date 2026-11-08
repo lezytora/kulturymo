@@ -29,12 +29,15 @@ export function mediaHtml({ src = "", alt = "", ratio = "3x2", color = "", video
 }
 
 // Кругле фото людини
-export function avatarHtml(author, size = 72) {
+// decorative: true — ім’я вже написане поруч текстом, тож alt порожній (скрінрідер не читає двічі)
+// eager: true — фото видно одразу при відкритті сторінки (не відкладати завантаження)
+export function avatarHtml(author, size = 72, { decorative = false, eager = false } = {}) {
   const name = escapeHtml(author.name);
+  const loading = eager ? `fetchpriority="high"` : `loading="lazy"`;
   const inner = author.photo
-    ? `<img src="${escapeHtml(srcUrl(author.photo))}" alt="${name}" width="${size * 2}" height="${size * 2}" loading="lazy" decoding="async">`
+    ? `<img src="${escapeHtml(srcUrl(author.photo))}" alt="${decorative ? "" : name}" width="${size * 2}" height="${size * 2}" ${loading} decoding="async">`
     : `<span class="media__label" aria-hidden="true">Фото</span>`;
-  const role = author.photo ? "" : ` role="img" aria-label="${name}"`;
+  const role = author.photo || decorative ? (decorative && !author.photo ? ` aria-hidden="true"` : "") : ` role="img" aria-label="${name}"`;
   return `<div class="media avatar" style="--avatar-size:${size}px"${role}>${inner}</div>`;
 }
 
@@ -64,15 +67,22 @@ export function metaHtml(article, { author = true, date = true, when = false, re
 const rubricColor = (article) => getRubric(article.rubric)?.color || "";
 const isVideo = (article) => Boolean(article.video);
 
+// Фото для картки: обкладинка, а якщо її немає — постер відео
+function coverOf(article) {
+  const cover = article.cover || {};
+  if (!cover.src && article.video?.poster) return { ...cover, src: article.video.poster };
+  return cover;
+}
+
 // ---------- Картка L: фото 16:9, великий заголовок, лід ----------
 export function cardL(article, { level = 3, eager = false, extraClass = "" } = {}) {
   return `
     <article class="card card--l${extraClass ? " " + extraClass : ""}">
-      ${mediaHtml({ ...article.cover, ratio: "16x9", color: rubricColor(article), video: isVideo(article), eager })}
+      ${mediaHtml({ ...coverOf(article), ratio: "16x9", color: rubricColor(article), video: isVideo(article), eager })}
       <div class="card__body">
         ${tagHtml(article.rubric)}
         <h${level} class="card__title"><a class="card__link" href="${links.article(article.id)}">${escapeHtml(article.title)}</a></h${level}>
-        <p class="card__lead">${escapeHtml(article.lead)}</p>
+        ${article.lead ? `<p class="card__lead">${escapeHtml(article.lead)}</p>` : ""}
         ${metaHtml(article)}
       </div>
     </article>`;
@@ -82,7 +92,7 @@ export function cardL(article, { level = 3, eager = false, extraClass = "" } = {
 export function cardM(article, { level = 3, showTag = false, ratio = "3x2", author = true } = {}) {
   return `
     <article class="card card--m${isVideo(article) ? " card--video" : ""}">
-      ${mediaHtml({ ...article.cover, ratio, color: rubricColor(article), video: isVideo(article), play: "small" })}
+      ${mediaHtml({ ...coverOf(article), ratio, color: rubricColor(article), video: isVideo(article), play: "small" })}
       <div class="card__body">
         ${showTag ? tagHtml(article.rubric) : ""}
         <h${level} class="card__title"><a class="card__link" href="${links.article(article.id)}">${escapeHtml(article.title)}</a></h${level}>
@@ -101,18 +111,24 @@ export function cardS(article, { level = 3, when = false, showTag = true, author
     </article>`;
 }
 
+// ---------- Жанр події (Балет, Опера, Комедія…) — нейтральна плашка без посилання ----------
+export function genreTags(event) {
+  const list = event.genres || [];
+  return list.length ? `<span class="genre-tags">${list.map((g) => `<span class="tag tag--genre">${escapeHtml(g)}</span>`).join("")}</span>` : "";
+}
+
 // ---------- Картка події: велика цифра дня, місяць, назва, місце, час ----------
 export function cardEvent(event, { level = 3 } = {}) {
   const d = dateParts(event.date);
-  const r = getRubric(event.rubric);
   return `
-    <article class="card card--event" ${r ? `style="--rubric:${escapeHtml(r.color)}"` : ""}>
+    <article class="card card--event">
       <time class="event-date" datetime="${isoDateTime(event.date, event.time)}">
         <span class="event-date__day">${d.day}</span>
         <span class="event-date__month">${escapeHtml(d.month)}</span>
         <span class="event-date__weekday">${escapeHtml(d.weekday)}</span>
       </time>
       <div class="card__body">
+        ${genreTags(event)}
         <h${level} class="card__title"><a class="card__link" href="${links.events(event.id)}">${escapeHtml(event.title)}</a></h${level}>
         <p class="event-info">
           <span>${escapeHtml(event.place)}</span>
@@ -127,7 +143,7 @@ export function cardEvent(event, { level = 3 } = {}) {
 export function mosaicTile(article, { level = 3 } = {}) {
   return `
     <article class="card card--tile">
-      ${mediaHtml({ ...article.cover, ratio: "3x2", color: rubricColor(article) })}
+      ${mediaHtml({ ...coverOf(article), ratio: "3x2", color: rubricColor(article) })}
       <div class="tile__caption">
         <h${level} class="card__title"><a class="card__link" href="${links.article(article.id)}">${escapeHtml(article.title)}</a></h${level}>
         <time datetime="${isoDateTime(article.date, article.time)}">${escapeHtml(formatDate(article.date))}</time>

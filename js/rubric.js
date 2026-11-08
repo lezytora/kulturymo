@@ -6,7 +6,7 @@
 
 import { setActiveRubric, setPageMeta, reveal } from "./main.js";
 import { rubrics, articles } from "./data.js";
-import { escapeHtml, byNewest, plural } from "./utils.js";
+import { links, escapeHtml, byNewest, plural } from "./utils.js";
 import { cardL, cardM, mosaicTile, notFoundHtml, rubricChips } from "./components.js";
 
 // Скільки карток показувати за раз (під головним матеріалом).
@@ -69,6 +69,14 @@ function gridItemsHtml(list) {
 
 function resultsHtml() {
   const list = filtered();
+  // У рубриці ще немає жодного матеріалу
+  if (!all.length) {
+    return `
+      <div class="rubric-empty">
+        <p class="lead">У цій рубриці матеріалів ще немає. Ми саме над ними працюємо.</p>
+        <a class="btn btn--quiet" href="${links.home()}">На головну</a>
+      </div>`;
+  }
   if (!list.length) {
     return `
       <div class="rubric-empty">
@@ -108,7 +116,7 @@ function pageHtml() {
           <p class="page-head__count">${countLabel(all.length)}</p>
         </div>
       </header>
-      ${filtersHtml()}
+      ${all.length ? filtersHtml() : ""}
       <p class="visually-hidden" aria-live="polite" data-status></p>
       <div class="rubric-results" data-results>${resultsHtml()}</div>
     </div>

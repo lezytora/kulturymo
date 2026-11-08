@@ -53,9 +53,9 @@ function personHtml(person) {
       <article class="card person">
         ${mediaHtml({ src: person.photo, alt: person.name, ratio: "4x5", extraClass: "person__photo" })}
         <div class="card__body">
-          <p class="person__role">${escapeHtml(person.role)}</p>
+          ${person.role ? `<p class="person__role">${escapeHtml(person.role)}</p>` : ""}
           <h3 class="card__title person__name"><a class="card__link" href="${links.author(person.id)}">${escapeHtml(person.name)}</a></h3>
-          <p class="person__bio">${escapeHtml(person.bio)}</p>
+          ${person.bio ? `<p class="person__bio">${escapeHtml(person.bio)}</p>` : ""}
           ${n ? `<p class="meta"><span>${countArticles(n)}</span></p>` : ""}
         </div>
       </article>

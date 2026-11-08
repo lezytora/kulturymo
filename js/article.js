@@ -19,34 +19,68 @@ const main = document.querySelector("#main");
 // ---------- Блоки тексту ----------
 
 const YT_ID = /^[\w-]{6,20}$/; // формат ID відео з YouTube
+const VIDEO_RATIOS = ["16x9", "9x16", "1x1"]; // пропорції відео: звичайне, вертикальне, квадратне
+const safeUrl = (u = "") => (/^(https?:)?\/\//.test(u) ? u : links.asset(u));
 
-function videoHtml(youtubeId, color) {
-  const id = YT_ID.test(youtubeId || "") ? youtubeId : "";
+// Відео: { youtubeId } — плеєр YouTube, { src, poster, ratio } — власний файл з assets/video/,
+// нічого — заглушка з кнопкою Play. main: true — головне відео матеріалу (замість обкладинки).
+function videoHtml(video = {}, color, { main = false } = {}) {
+  const ratio = VIDEO_RATIOS.includes(video.ratio) ? video.ratio : "16x9";
+  const cls = `${main ? "container article__cover" : "wide"} video-embed video-embed--${ratio}`;
+  // Власний файл: звичайний <video> з елементами керування
+  if (video.src) {
+    const poster = video.poster ? ` poster="${escapeHtml(safeUrl(video.poster))}"` : "";
+    return `
+      <figure class="${cls}">
+        <div class="media media--${ratio} media--player">
+          <video controls playsinline preload="metadata"${poster} aria-label="Відео: ${escapeHtml(article.title)}">
+            <source src="${escapeHtml(safeUrl(video.src))}" type="video/mp4">
+            Твій браузер не може відтворити це відео.
+          </video>
+        </div>
+      </figure>`;
+  }
+  const id = YT_ID.test(video.youtubeId || "") ? video.youtubeId : "";
   // Є ID — кнопка Play підвантажує плеєр YouTube лише після кліку (сторінка не важчає)
   if (id) {
     return `
-      <figure class="wide video-embed" data-youtube="${escapeHtml(id)}">
-        <div class="media media--16x9 media--video" style="--rubric:${escapeHtml(color)}">
+      <figure class="${cls}" data-youtube="${escapeHtml(id)}">
+        <div class="media media--${ratio} media--video" style="--rubric:${escapeHtml(color)}">
           <button class="play" type="button" aria-label="Відтворити відео">${PLAY_ICON}</button>
           <span class="media__label" aria-hidden="true">Відео</span>
         </div>
       </figure>`;
   }
-  // ID ще немає — заглушка з іконкою Play
+  // Відео ще немає — заглушка з іконкою Play
   return `
-    <figure class="wide video-embed">
-      ${mediaHtml({ alt: "Відео до матеріалу", ratio: "16x9", color, video: true })}
+    <figure class="${cls}">
+      ${mediaHtml({ alt: "Відео до матеріалу", ratio, color, video: true })}
     </figure>`;
 }
 
+// Галерея: фото з підписами (caption — напр. «Джерело: Суспільне»).
+// Якщо підпис дослівно збігається з alt, alt порожній — скрінрідер не читає те саме двічі.
 function galleryHtml(items, color) {
   return `
     <figure class="wide gallery${items.length % 2 ? " gallery--odd" : ""}">
       <ul class="gallery__grid" role="list">
-        ${items.map((it) => `<li>${mediaHtml({ src: it.src, alt: it.alt, ratio: "3x2", color })}</li>`).join("")}
+        ${items
+          .map(
+            (it) => `<li>
+              ${mediaHtml({ src: it.src, alt: it.caption === it.alt ? "" : it.alt, ratio: "3x2", color })}
+              ${it.caption ? `<p class="gallery__caption">${escapeHtml(it.caption)}</p>` : ""}
+            </li>`
+          )
+          .join("")}
       </ul>
-      ${items.some((it) => it.alt) ? `<figcaption class="visually-hidden">Галерея: ${items.length} фото</figcaption>` : ""}
+      ${items.length > 1 ? `<figcaption class="visually-hidden">Галерея: ${items.length} фото</figcaption>` : ""}
     </figure>`;
+}
+
+// Посилання в тексті: лише http(s)
+function linkHtml(block) {
+  if (!/^https?:\/\//.test(block.href || "")) return `<p>${escapeHtml(block.text)}</p>`;
+  return `<p class="prose__link"><a class="link" href="${escapeHtml(block.href)}" target="_blank" rel="noopener">${escapeHtml(block.text)}</a></p>`;
 }
 
 function blockHtml(block, color) {
@@ -60,7 +94,9 @@ function blockHtml(block, color) {
     case "gallery":
       return galleryHtml(block.items || [], color);
     case "video":
-      return videoHtml(block.youtubeId, color);
+      return videoHtml(block, color);
+    case "link":
+      return linkHtml(block);
     default:
       return "";
   }
@@ -87,9 +123,9 @@ function pageHtml() {
         <div class="article__col">
           ${tagHtml(article.rubric)}
           <h1 class="article__title">${escapeHtml(article.title)}</h1>
-          <p class="article__lead">${escapeHtml(article.lead)}</p>
+          ${article.lead ? `<p class="article__lead">${escapeHtml(article.lead)}</p>` : ""}
           <div class="byline">
-            ${author ? `<a class="byline__photo" href="${links.author(author.id)}" tabindex="-1" aria-hidden="true">${avatarHtml(author, 48)}</a>` : ""}
+            ${author ? `<a class="byline__photo" href="${links.author(author.id)}" tabindex="-1" aria-hidden="true">${avatarHtml(author, 48, { decorative: true })}</a>` : ""}
             <div class="byline__text">
               ${author ? `<a class="byline__name" href="${links.author(author.id)}">${escapeHtml(author.name)}</a>` : ""}
               <div class="meta">
@@ -101,10 +137,14 @@ function pageHtml() {
         </div>
       </header>
 
-      <figure class="container article__cover">
-        ${mediaHtml({ src: cover.src, alt: cover.alt, ratio: "16x9", color, eager: true })}
-        ${cover.caption ? `<figcaption>${escapeHtml(cover.caption)}</figcaption>` : ""}
-      </figure>
+      ${
+        article.video
+          ? videoHtml(article.video, color, { main: true }) // головне відео — замість обкладинки
+          : `<figure class="container article__cover">
+              ${mediaHtml({ src: cover.src, alt: cover.caption === cover.alt ? "" : cover.alt, ratio: "16x9", color, eager: true })}
+              ${cover.caption ? `<figcaption>${escapeHtml(cover.caption)}</figcaption>` : ""}
+            </figure>`
+      }
 
       <div class="container">
         <div class="article__col prose">
@@ -126,11 +166,11 @@ function pageHtml() {
           ${
             author
               ? `<section class="author-box" aria-labelledby="author-box-name">
-                  <a href="${links.author(author.id)}" tabindex="-1" aria-hidden="true">${avatarHtml(author, 96)}</a>
+                  <a href="${links.author(author.id)}" tabindex="-1" aria-hidden="true">${avatarHtml(author, 96, { decorative: true })}</a>
                   <div class="author-box__text">
                     <h2 class="author-box__name" id="author-box-name"><a href="${links.author(author.id)}">${escapeHtml(author.name)}</a></h2>
-                    <p class="author-box__role">${escapeHtml(author.role)}</p>
-                    <p>${escapeHtml(author.bio)}</p>
+                    ${author.role ? `<p class="author-box__role">${escapeHtml(author.role)}</p>` : ""}
+                    ${author.bio ? `<p>${escapeHtml(author.bio)}</p>` : ""}
                     <a class="link-arrow" href="${links.author(author.id)}">Усі матеріали автора</a>
                   </div>
                 </section>`
@@ -174,7 +214,7 @@ if (!article) {
   });
 } else {
   setActiveRubric(article.rubric);
-  setPageMeta({ title: article.title, description: article.lead, type: "article", published: isoDateTime(article.date, article.time) });
+  setPageMeta({ title: article.title, description: article.lead || article.title, type: "article", published: isoDateTime(article.date, article.time) });
   main.innerHTML = pageHtml();
   bindVideo();
   reveal(main);

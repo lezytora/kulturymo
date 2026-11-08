@@ -9,14 +9,14 @@
 // =====================================================================
 
 import { rubrics, articles, events } from "./data.js";
-import { escapeHtml, getRubric, getAuthor, toDate } from "./utils.js";
+import { escapeHtml, getRubric, getAuthor, toDate, toISODate } from "./utils.js";
 
 const APOSTROPHES = /['’ʼ`‘]/g;
 const PUNCTUATION = /[«»"“”„.,!?:;()…—–/\\[\]{}*+=<>|#№%]/g;
 
 // Вага поля. Чим більше число — тим вище матеріал у результатах.
 const ARTICLE_WEIGHTS = { title: 10, tags: 6, rubric: 6, lead: 4, author: 3, body: 1 };
-const EVENT_WEIGHTS = { title: 10, rubric: 6, place: 4, description: 2 };
+const EVENT_WEIGHTS = { title: 10, genres: 6, place: 4, description: 2 };
 
 export function normalize(value = "") {
   return String(value)
@@ -68,7 +68,7 @@ function buildIndex() {
     item: e,
     fields: {
       title: normalize(e.title),
-      rubric: normalize(getRubric(e.rubric)?.name),
+      genres: normalize((e.genres || []).join(" ")),
       place: normalize(e.place),
       description: normalize(e.description),
     },
@@ -119,7 +119,8 @@ export function searchEvents(query) {
   if (!terms.length) return [];
   if (!eventIndex) buildIndex();
   // Події з однаковою вагою — найближчі першими
-  return run(eventIndex, terms, EVENT_WEIGHTS, (a, b) => toDate(a.date, a.time) - toDate(b.date, b.time));
+  const today = toISODate(new Date()); // минулі покази в пошук не потрапляють
+  return run(eventIndex, terms, EVENT_WEIGHTS, (a, b) => toDate(a.date, a.time) - toDate(b.date, b.time)).filter((e) => e.date >= today);
 }
 
 // Підказки для шапки: рубрики, заголовки матеріалів, теги (разом до `limit`)

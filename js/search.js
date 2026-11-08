@@ -8,7 +8,7 @@
 import { setPageMeta, reveal } from "./main.js";
 import { rubrics, articles } from "./data.js";
 import { links, escapeHtml, byNewest, plural, formatDayMonth, formatDate, isoDateTime, getAuthor, readingTime } from "./utils.js";
-import { tagHtml, rubricChips } from "./components.js";
+import { tagHtml, rubricChips, genreTags } from "./components.js";
 import { searchArticles, searchEvents, highlight, snippet, queryTerms, normalize, bodyText } from "./search-core.js";
 
 const FEED_PAGE = 8;     // скільки свіжих матеріалів показувати за раз без запиту
@@ -52,7 +52,7 @@ function eventRow(event, query) {
   const terms = queryTerms(query);
   return `
     <article class="card card--s result">
-      ${tagHtml(event.rubric)}
+      ${genreTags(event)}
       <h3 class="card__title"><a class="card__link" href="${links.events(event.id)}">${highlight(event.title, terms)}</a></h3>
       <p class="result__text">${highlight(event.description, terms)}</p>
       <div class="meta">

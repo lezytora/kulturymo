@@ -24,11 +24,11 @@ function headHtml() {
   const first = list[list.length - 1];
   return `
     <header class="author-head">
-      ${avatarHtml(author, 176)}
+      ${avatarHtml(author, 176, { eager: true })}
       <div class="author-head__text">
-        <p class="author-head__role">${escapeHtml(author.role)}</p>
+        ${author.role ? `<p class="author-head__role">${escapeHtml(author.role)}</p>` : ""}
         <h1 class="h-page author-head__name">${escapeHtml(author.name)}</h1>
-        <p class="lead">${escapeHtml(author.bio)}</p>
+        ${author.bio ? `<p class="lead">${escapeHtml(author.bio)}</p>` : ""}
         <p class="meta">
           <span>${countArticles(list.length)}</span>
           ${first ? `<span>Пише з ${escapeHtml(formatDate(first.date))}</span>` : ""}
@@ -69,7 +69,7 @@ function othersHtml() {
             (p) => `
           <li>
             <a class="face" href="${links.author(p.id)}">
-              ${avatarHtml(p, 96)}
+              ${avatarHtml(p, 96, { decorative: true })}
               <span class="face__name">${escapeHtml(p.name)}</span>
             </a>
           </li>`
@@ -103,7 +103,7 @@ if (!author) {
     `<p><a class="link-arrow" href="${links.about("team")}">Уся команда</a></p></section>`
   );
 } else {
-  setPageMeta({ title: author.name, description: `${author.role}. ${author.bio}`, type: "profile" });
+  setPageMeta({ title: author.name, description: [author.role, author.bio].filter(Boolean).join(". ") || `${author.name} — команда «Культуримо»`, type: "profile" });
   main.innerHTML = pageHtml();
   main.addEventListener("click", (e) => {
     if (!e.target.closest("[data-more]")) return;

@@ -1,14 +1,17 @@
 // =====================================================================
-// Афіша «Що відвідати»: events.html (необов'язково ?rubryka=kino, #id-події)
-// Усі події з data.js, згруповані за днями, фільтр за рубрикою.
-// Найближчі події зверху; ті, що вже минули, — у згорнутому блоці внизу.
-// На кожну подію можна дати посилання: events.html#id (так ведуть картки з головної й пошуку).
+// Афіша «Що відвідати»: events.html (необов'язково ?zhanr=Опера, #id-події)
+// Вистави з data.js, згруповані за днями, фільтр за жанром (поле genres).
+// Минулі покази не показуються. На кожен показ можна дати посилання events.html#id
+// (так ведуть картки з головної й пошуку).
 // =====================================================================
 
 import { setPageMeta, scrollToHash } from "./main.js";
-import { rubrics, events } from "./data.js";
-import { escapeHtml, getRubric, toDate, toISODate, dateParts, isoDateTime, plural } from "./utils.js";
-import { tagHtml } from "./components.js";
+import { events } from "./data.js";
+import { escapeHtml, toDate, toISODate, dateParts, isoDateTime, plural } from "./utils.js";
+import { genreTags } from "./components.js";
+
+// Порядок жанрів у фільтрі. Новий жанр із data.js, якого тут немає, додасться в кінець.
+const GENRE_ORDER = ["Балет", "Опера", "Комедія", "Казка", "Драма", "Мюзикл"];
 
 const main = document.querySelector("#main");
 const today = toISODate(new Date());
@@ -19,43 +22,38 @@ const tomorrow = (() => {
 })();
 
 const byTime = (a, b) => toDate(a.date, a.time) - toDate(b.date, b.time);
-const all = [...events].sort(byTime);
-const isPast = (e) => e.date < today;
+// Лише сьогоднішні й майбутні покази
+const all = events.filter((e) => e.date >= today).sort(byTime);
 
-// У фільтрі лише рубрики, в яких є події (у порядку меню)
-const filterRubrics = rubrics.filter((r) => all.some((e) => e.rubric === r.id));
+const genres = [...new Set(all.flatMap((e) => e.genres || []))].sort(
+  (a, b) => (GENRE_ORDER.indexOf(a) + 1 || 99) - (GENRE_ORDER.indexOf(b) + 1 || 99)
+);
 
-const state = { rubric: "" }; // "" = усі рубрики
+const state = { genre: "" }; // "" = усі жанри
 
-const countEvents = (n) => `${n} ${plural(n, ["подія", "події", "подій"])}`;
-const visible = () => (state.rubric ? all.filter((e) => e.rubric === state.rubric) : all);
+const countEvents = (n) => `${n} ${plural(n, ["показ", "покази", "показів"])}`;
+const visible = () => (state.genre ? all.filter((e) => (e.genres || []).includes(state.genre)) : all);
 
 // ---------- Розмітка ----------
 
 function filtersHtml() {
-  const buttons = [{ id: "", name: "Усі", color: "" }, ...filterRubrics];
   return `
-    <div class="filters" role="group" aria-label="Фільтр за рубрикою">
-      ${buttons
-        .map(
-          (r) => `<button class="chip" type="button" data-rubric-filter="${escapeHtml(r.id)}" aria-pressed="${r.id === state.rubric}"${
-            r.color ? ` style="--rubric:${escapeHtml(r.color)}"` : ""
-          }>${r.color ? '<span class="chip__swatch" aria-hidden="true"></span>' : ""}${escapeHtml(r.name)}</button>`
-        )
+    <div class="filters" role="group" aria-label="Фільтр за жанром">
+      ${["", ...genres]
+        .map((g) => `<button class="chip" type="button" data-genre="${escapeHtml(g)}" aria-pressed="${g === state.genre}">${g ? escapeHtml(g) : "Усі"}</button>`)
         .join("")}
     </div>`;
 }
 
 function eventRow(e) {
-  const r = getRubric(e.rubric);
   return `
     <li>
-      <article class="event-row" id="${escapeHtml(e.id)}"${r ? ` style="--rubric:${escapeHtml(r.color)}"` : ""} aria-labelledby="${escapeHtml(e.id)}-title">
+      <article class="event-row" id="${escapeHtml(e.id)}" aria-labelledby="${escapeHtml(e.id)}-title">
         <time class="event-row__time" datetime="${isoDateTime(e.date, e.time)}">${escapeHtml(e.time)}</time>
         <div class="event-row__body">
-          ${tagHtml(e.rubric)}
+          ${genreTags(e)}
           <h3 class="event-row__title" id="${escapeHtml(e.id)}-title">${escapeHtml(e.title)}</h3>
-          <p class="event-row__desc">${escapeHtml(e.description)}</p>
+          ${e.description ? `<p class="event-row__desc">${escapeHtml(e.description)}</p>` : ""}
           <p class="event-row__place"><span class="visually-hidden">Місце: </span>${escapeHtml(e.place)}</p>
         </div>
       </article>
@@ -71,12 +69,14 @@ function dayLabel(date) {
 function dayHtml(date, list) {
   const d = dateParts(date);
   const rel = dayLabel(date);
+  // Подія наступного року — показуємо рік біля місяця
+  const year = date.slice(0, 4) !== today.slice(0, 4) ? ` ${date.slice(0, 4)}` : "";
   return `
     <section class="day${rel ? " day--soon" : ""}" aria-labelledby="day-${date}">
       <h2 class="day__head" id="day-${date}">
         <time datetime="${date}">
           <span class="day__num">${d.day}</span>
-          <span class="day__month">${escapeHtml(d.month)}</span>
+          <span class="day__month">${escapeHtml(d.month)}${year}</span>
           <span class="day__weekday">${escapeHtml(d.weekday)}</span>
           ${rel ? `<span class="day__rel">${rel}</span>` : ""}
         </time>
@@ -95,43 +95,29 @@ function daysHtml(list) {
   return [...groups].map(([date, items]) => dayHtml(date, items)).join("");
 }
 
-function resultsHtml({ pastOpen = false } = {}) {
+function resultsHtml() {
   const list = visible();
-  const upcoming = list.filter((e) => !isPast(e));
-  const past = list.filter(isPast).reverse(); // минулі: найсвіжіші першими
-  const rubricName = state.rubric ? getRubric(state.rubric)?.name : "";
-
-  const upcomingHtml = upcoming.length
-    ? daysHtml(upcoming)
-    : `<div class="events-none">
-        <p class="lead">${
-          rubricName ? `У рубриці «${escapeHtml(rubricName)}» найближчих подій поки немає.` : "Найближчих подій поки немає. Ми саме збираємо нову афішу."
-        }</p>
-        ${state.rubric ? `<button class="btn btn--quiet" type="button" data-rubric-filter="">Показати всі події</button>` : ""}
-      </div>`;
-
-  const pastHtml = past.length
-    ? `<details class="events-past" data-past${pastOpen ? " open" : ""}>
-        <summary class="events-past__summary">Минулі події <span class="load-more__count">${past.length}</span></summary>
-        <div class="events-past__list">${daysHtml(past)}</div>
-      </details>`
-    : "";
-
-  return upcomingHtml + pastHtml;
+  if (list.length) return daysHtml(list);
+  return `
+    <div class="events-none">
+      <p class="lead">${
+        state.genre ? `Найближчих вистав у жанрі «${escapeHtml(state.genre)}» поки немає.` : "Найближчих подій поки немає. Ми саме збираємо нову афішу."
+      }</p>
+      ${state.genre ? `<button class="btn btn--quiet" type="button" data-genre="">Показати всі події</button>` : ""}
+    </div>`;
 }
 
 function pageHtml() {
-  const upcoming = all.filter((e) => !isPast(e)).length;
   return `
     <div class="container events-page">
       <header class="page-head">
         <h1 class="h-page">Що відвідати</h1>
         <div class="page-head__side">
-          <p class="lead">Кіно, квартирники, лекції й поїздки до замків. Події, на які ми йдемо самі й кличемо тебе.</p>
-          <p class="page-head__count">${upcoming ? `Попереду ${countEvents(upcoming)}` : "Нових подій поки немає"}</p>
+          <p class="lead">Вистави львівських театрів: балет, опера, комедія, казка, драма й мюзикл.</p>
+          <p class="page-head__count">${all.length ? `Попереду ${countEvents(all.length)}` : "Нових подій поки немає"}</p>
         </div>
       </header>
-      ${filtersHtml()}
+      ${genres.length ? filtersHtml() : ""}
       <p class="visually-hidden" aria-live="polite" data-status></p>
       <div class="events-list" data-results></div>
     </div>`;
@@ -139,57 +125,52 @@ function pageHtml() {
 
 // ---------- Поведінка ----------
 
-function update({ announce = false, pastOpen = false } = {}) {
-  main.querySelector("[data-results]").innerHTML = resultsHtml({ pastOpen });
-  main.querySelectorAll("[data-rubric-filter]").forEach((b) => {
-    if (b.closest(".filters")) b.setAttribute("aria-pressed", String(b.dataset.rubricFilter === state.rubric));
-  });
+function update({ announce = false } = {}) {
+  main.querySelector("[data-results]").innerHTML = resultsHtml();
+  main.querySelectorAll(".filters [data-genre]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.genre === state.genre)));
   if (announce) {
-    const n = visible().filter((e) => !isPast(e)).length;
-    const name = state.rubric ? getRubric(state.rubric)?.name : "Усі рубрики";
-    main.querySelector("[data-status]").textContent = `${name}: попереду ${countEvents(n)}`;
+    main.querySelector("[data-status]").textContent = `${state.genre || "Усі жанри"}: ${countEvents(visible().length)}`;
   }
 }
 
-function setRubric(id) {
-  state.rubric = filterRubrics.some((r) => r.id === id) ? id : "";
+function setGenre(g) {
+  state.genre = genres.includes(g) ? g : "";
   // Фільтр зберігається в адресі, щоб посиланням можна було поділитися
   const url = new URL(location.href);
-  if (state.rubric) url.searchParams.set("rubryka", state.rubric);
-  else url.searchParams.delete("rubryka");
+  if (state.genre) url.searchParams.set("zhanr", state.genre);
+  else url.searchParams.delete("zhanr");
   url.hash = "";
   history.replaceState(null, "", url);
   update({ announce: true });
 }
 
-// Відкрили посилання на конкретну подію (#id): знімаємо фільтр, якщо він її ховає,
-// розгортаємо «Минулі події», якщо подія вже минула, і прокручуємо до неї.
+// Відкрили посилання на конкретний показ (#id): знімаємо фільтр, якщо він його ховає, і прокручуємо до нього.
 function showHashTarget() {
   const id = decodeURIComponent(location.hash.slice(1));
   const target = all.find((e) => e.id === id);
   if (!target) return;
-  if (state.rubric && target.rubric !== state.rubric) {
-    state.rubric = "";
+  if (state.genre && !(target.genres || []).includes(state.genre)) {
+    state.genre = "";
     const url = new URL(location.href);
-    url.searchParams.delete("rubryka");
+    url.searchParams.delete("zhanr");
     history.replaceState(null, "", url);
+    update();
   }
-  update({ pastOpen: isPast(target) });
   scrollToHash();
 }
 
 function init() {
-  setPageMeta({ title: "Що відвідати", description: "Афіша культурних подій Львова для студентів і молоді: кіно, квартирники, лекції, прогулянки, поїздки до замків." });
-  const fromUrl = new URLSearchParams(location.search).get("rubryka");
-  if (fromUrl && filterRubrics.some((r) => r.id === fromUrl)) state.rubric = fromUrl;
+  setPageMeta({ title: "Що відвідати", description: "Афіша вистав у театрах Львова: балет, опера, комедія, казка, драма й мюзикл." });
+  const fromUrl = new URLSearchParams(location.search).get("zhanr");
+  if (fromUrl && genres.includes(fromUrl)) state.genre = fromUrl;
 
   main.innerHTML = pageHtml();
   update();
   showHashTarget();
 
   main.addEventListener("click", (e) => {
-    const btn = e.target.closest("[data-rubric-filter]");
-    if (btn) setRubric(btn.dataset.rubricFilter);
+    const btn = e.target.closest("[data-genre]");
+    if (btn) setGenre(btn.dataset.genre);
   });
   window.addEventListener("hashchange", showHashTarget);
 }
