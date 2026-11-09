@@ -7,7 +7,7 @@
 import { setActiveRubric, setPageMeta, reveal } from "./main.js";
 import { rubrics, articles } from "./data.js";
 import { links, escapeHtml, byNewest, plural } from "./utils.js";
-import { cardL, cardM, mosaicTile, notFoundHtml, rubricChips } from "./components.js";
+import { cardL, cardM, mosaicTile, notFoundHtml, rubricChips, textWithLinks } from "./components.js";
 
 // Скільки карток показувати за раз (під головним матеріалом).
 // Поки матеріалів мало, стоїть 3; коли їх стане більше — постав 9.
@@ -115,11 +115,11 @@ function pageHtml() {
       <header class="page-head">
         <h1 class="h-page page-head__title"><span class="rubric-mark" aria-hidden="true"></span>${escapeHtml(rubric.name)}</h1>
         <div class="page-head__side">
-          <p class="lead">${escapeHtml(rubric.description)}</p>
+          <p class="lead">${textWithLinks(rubric.description, rubric.descriptionLinks)}</p>
           <p class="page-head__count">${countLabel(all.length)}</p>
         </div>
       </header>
-      ${activeSubtopics.length ? filtersHtml() : ""}
+      ${activeSubtopics.length > 1 ? filtersHtml() : "" /* одна підтема — фільтр нічого не фільтрує, не показуємо */}
       <p class="visually-hidden" aria-live="polite" data-status></p>
       <div class="rubric-results" data-results>${resultsHtml()}</div>
     </div>

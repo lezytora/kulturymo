@@ -151,6 +151,24 @@ export function mosaicTile(article, { level = 3 } = {}) {
     </article>`;
 }
 
+// ---------- Посилання всередині тексту (абзац статті, опис рубрики) ----------
+// Абзац: { type: "p", text: "...", links: [{ text: "фраза з абзацу", href: "https://..." }] }.
+// Кожне посилання ставиться на перший збіг фрази після попереднього посилання;
+// skip: N — пропустити N таких самих фраз (якщо слово повторюється). Лише http(s); увесь текст екранується.
+export function textWithLinks(text, links = []) {
+  let html = "";
+  let cursor = 0;
+  for (const l of links) {
+    if (!l?.text || !/^https?:\/\//.test(l.href || "")) continue;
+    let at = text.indexOf(l.text, cursor);
+    for (let n = 0; n < (l.skip || 0) && at !== -1; n++) at = text.indexOf(l.text, at + 1);
+    if (at === -1) continue;
+    html += escapeHtml(text.slice(cursor, at)) + `<a class="link" href="${escapeHtml(l.href)}" target="_blank" rel="noopener">${escapeHtml(l.text)}</a>`;
+    cursor = at + l.text.length;
+  }
+  return html + escapeHtml(text.slice(cursor));
+}
+
 // ---------- Стан «не знайдено» (невідомий id у адресі) ----------
 export function notFoundHtml({ title, text }) {
   return `
