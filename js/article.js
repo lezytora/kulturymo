@@ -77,7 +77,24 @@ function galleryHtml(items, color) {
     </figure>`;
 }
 
-// Посилання в тексті: лише http(s)
+// Посилання всередині абзацу: { type: "p", text: "...", links: [{ text: "фраза з абзацу", href: "https://..." }] }.
+// Кожне посилання ставиться на перший збіг фрази після попереднього посилання;
+// skip: N — пропустити N таких самих фраз (якщо слово повторюється). Лише http(s); увесь текст екранується.
+function textWithLinks(text, links = []) {
+  let html = "";
+  let cursor = 0;
+  for (const l of links) {
+    if (!l?.text || !/^https?:\/\//.test(l.href || "")) continue;
+    let at = text.indexOf(l.text, cursor);
+    for (let n = 0; n < (l.skip || 0) && at !== -1; n++) at = text.indexOf(l.text, at + 1);
+    if (at === -1) continue;
+    html += escapeHtml(text.slice(cursor, at)) + `<a class="link" href="${escapeHtml(l.href)}" target="_blank" rel="noopener">${escapeHtml(l.text)}</a>`;
+    cursor = at + l.text.length;
+  }
+  return html + escapeHtml(text.slice(cursor));
+}
+
+// Посилання окремим рядком: лише http(s)
 function linkHtml(block) {
   if (!/^https?:\/\//.test(block.href || "")) return `<p>${escapeHtml(block.text)}</p>`;
   return `<p class="prose__link"><a class="link" href="${escapeHtml(block.href)}" target="_blank" rel="noopener">${escapeHtml(block.text)}</a></p>`;
@@ -86,7 +103,7 @@ function linkHtml(block) {
 function blockHtml(block, color) {
   switch (block.type) {
     case "p":
-      return `<p>${escapeHtml(block.text)}</p>`;
+      return `<p>${textWithLinks(block.text, block.links)}</p>`;
     case "h2":
       return `<h2>${escapeHtml(block.text)}</h2>`;
     case "quote":
